@@ -1,1 +1,56 @@
 This is our DSTN Project
+
+Question #3
+
+The memory subsystem [with TLB, L1 Cache, L2 Cache and Main Memory] has following configuration:
+TLB: Conventional Hierarchical TLB [8-way set associative L1 TLB with 16 entries [Random replacement] and 4-way set-associative L2 TLB with 32 entries [LRU square
+matrix replacement]. Flushing of non-shared entries happen at context switching.].
+L1 Cache: 4KB, 32B, 4 Way set associative way-halting cache. The cache follows Write back and Look through. It follows LRU counter as replacement policy.
+L2 Cache: 32KB, 64B, 16 Way set associative cache. The cache follows Write through and look aside. It follows FIFO as replacement policy.
+Main Memory with Memory Management: 32MB Main memory with Second Chance as replacement policy. The memory management scheme used is Pure Paging.
+Thrashing mechanism to implement: Page fault frequency.
+
+Given assumptions
+
+1. Virtual Memory contains the complete program. Hard disk is big enough to hold all the programs and No network file is accessed.
+2. First 2 blocks of the process (assume the page size and frame size same and is 512B) will be pre-paged into main memory before a process starts its execution.
+3. All other pages are loaded on demand [Assume the system supports dynamic loading. Also assume that the system has no dynamic linking support].
+4. Main memory follows Global replacement. Lower limit number of pages and upper limit number of pages per process should be strictly maintained.
+5. Page tables [and segment tables wherever applicable] of all the processes reside in main memory and will not be loaded into cache memory levels.
+
+Memory
+
+Physical address = 25 bits
+Frame offset = 9 bits
+Frame number = (25 - 9) = 16 bits
+Total number of frames: 2^(16) = 65536
+
+Virtual address = 32 bits
+Page offset = 9 bits
+Page number = (32 - 9) = 23 bits
+Total number of pages: 2^(23) = 8388608
+
+L1 cache [Split cache]
+4KB, 32B, 4 Way set associative way-halting cache. The cache follows Write back and Look through. It follows LRU counter as replacement policy.
+<Cache enrty and struct details>
+
+L2 cache
+32KB, 64B, 16 Way set associative cache. The cache follows Write through and look aside. It follows FIFO as replacement policy.
+<Cache enrty and struct details>
+
+TLB structure
+
+L1 TLB 8-way set-associative L1 TLB with 16 entries --- 2 sets
+L2 TLB 4-way set-associative L2 TLB with 32 entries --- 8 sets
+
+Each TLB set consists of:
+8 (one per way) TLB entries for L1 TLB
+4 (one per way) TLB entries for L2 TLB, 4x4 LRU square matrix - reqd to select entry to be evicted  
+
+Each TLB entry consists of:
+22-bit page tag no. (23-bit page no. - 1-bit set index) for L1 TLB
+20-bit page tag no. (23-bit page no. - 3-bit set index) for L1 TLB
+16-bit frame no.
+1-bit valid/invalid bit
+1-bit shared bit
+
