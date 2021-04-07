@@ -1,13 +1,16 @@
 #ifndef MAIN_MEMORY_H
 #define MAIN_MEMORY_H
 
+#define VALID 1
+#define INVALID 0
+
 #include "pagetable.h"
 
 typedef struct frame_table_entry
 {
-    int frame_number;
-    int pid;
-    int page_number;
+    unsigned int frame_number:16;
+    unsigned int pid:16;
+    unsigned int page_number:23;
 } frame_table_entry;
 
 typedef struct frame_table
@@ -18,7 +21,7 @@ typedef struct frame_table
 
 typedef struct main_memory_block
 {
-    int entry[64];
+    unsigned int entry[64];
 } main_memory_block;
 
 typedef struct main_memory
