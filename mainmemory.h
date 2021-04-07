@@ -6,28 +6,30 @@
 
 #include "pagetable.h"
 
-typedef struct frame_table_entry
+typedef struct
 {
     unsigned int frame_number:16;
     unsigned int pid:16;
     unsigned int page_number:23;
+    unsigned int valid_bit:1;
 } frame_table_entry;
 
-typedef struct frame_table
+typedef struct 
 {
     frame_table_entry* entry_table[65536];
 } frame_table;
 
 
-typedef struct main_memory_block
+typedef struct 
 {
     unsigned int entry[64];
 } main_memory_block;
 
-typedef struct main_memory
+typedef struct
 {
-    main_memory_block* blocks[65536];
     frame_table f_table;
+    page_table* p_tables[100]; //number of page tables in memory. Could be changed later on.//
+    main_memory_block* blocks[65536];
 } main_memory;
 
 #endif

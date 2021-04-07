@@ -4,7 +4,7 @@
 #define VALID 1
 #define INVALID 0
 
-typedef struct page_table_entry
+typedef struct
 {
     unsigned int page_number:23;
     unsigned int frame_number:16;
@@ -12,7 +12,7 @@ typedef struct page_table_entry
     unsigned int second_chance_bit:1;
 } page_table_entry;
 
-typedef struct page_table
+typedef struct
 {
     page_table_entry entry_table[64];
 } page_table;
