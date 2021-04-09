@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "pagetable.h"
 
-page_table* page_table_initialize()
+page_table* page_table_init()
 {
     page_table* p_table;
     p_table = (page_table*)malloc(sizeof(page_table));
