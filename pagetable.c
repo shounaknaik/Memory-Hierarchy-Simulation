@@ -14,6 +14,11 @@ page_table* page_table_init()
     return p_table;
 }
 
+page_table* get_address(unsigned int block_number)
+{
+    //
+}
+
 void page_table_free(page_table* p_table)
 {
     free(p_table);
