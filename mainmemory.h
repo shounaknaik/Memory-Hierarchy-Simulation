@@ -22,7 +22,7 @@ typedef struct
 
 typedef struct 
 {
-    unsigned int entry[64];
+    unsigned int entry[128];
 } main_memory_block;
 
 typedef struct
@@ -40,5 +40,12 @@ typedef struct
     second_chance_node* next;
     unsigned int second_chance_bit:1;
 } second_chance_node;
+
+typedef struct 
+{
+    second_chance_node* head;
+    second_chance_node* tail;
+} second_chance_fifo_queue;
+
 
 #endif
