@@ -10,8 +10,8 @@
 
 typedef struct l2_cache_entry
 {
-    unsigned int tag:5;
-    unsigned int data:512;
+    unsigned int tag:14;
+    unsigned int* data;
     unsigned int valid_bit:1;
     unsigned int fifo_bits:4;
 } l2_cache_entry;
@@ -19,7 +19,7 @@ typedef struct l2_cache_entry
 typedef struct set_entry 
 {
     l2_cache_entry set_entries[16];
-} way_entry;
+} set_entry;
 
 typedef struct l2_cache
 {
