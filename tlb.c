@@ -1,5 +1,3 @@
-// TODO: can change search_tlb fucntions to return unsigned int frame no. --- instead of returning ngative for miss, use a value out of bounds and add a condition check in calling function. 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -7,9 +5,9 @@
 
 int main (int argc, char *argv[]) {
 
-    int virtual_address = 0;
-    int page_number = 0;
-    int frame_number = 0;
+    unsigned int virtual_address = 0;
+    unsigned int page_number = 0;
+    unsigned int frame_number = 0;
     
     // To maintain TLB access stats
     int num_l1_tlb_accesses = 0;
@@ -42,7 +40,10 @@ int main (int argc, char *argv[]) {
     for (int i = 0; i < 14; i++) {
         printf("\nITERATION %d\n\n", i);
         
-        // Read memory requests from input file
+        // Read memory requests from input file -- determine if instr(7f)/data(10) is accessed 
+        // Instruction accesses go to L1 instruction cache
+        // Data accesses go to L1 data cache -- determine read/write based on rand()
+        
         fscanf (fptr,"%x", &virtual_address);
         printf("Virtual address: %d\n", virtual_address);
     
@@ -55,7 +56,7 @@ int main (int argc, char *argv[]) {
         num_l1_tlb_accesses++;
 
         // If the returned frame number is within valid range - L1 TLB HIT - frame number acquired
-        if (frame_number >= 0) {
+        if (frame_number >= 0 && frame_number <= MAX_FRAME_NUMBER) {
             printf("L1 TLB hit!\n");
             num_l1_tlb_hits++;          
         }
@@ -70,7 +71,7 @@ int main (int argc, char *argv[]) {
             num_l2_tlb_accesses++;
             
             // If the returned frame number is within valid range - L2 TLB HIT - frame number acquired
-            if (frame_number >= 0) {
+            if (frame_number >= 0 && frame_number <= MAX_FRAME_NUMBER) {
                 printf("L2 TLB hit!\n");
                 num_l2_tlb_hits++;
             }
@@ -80,16 +81,14 @@ int main (int argc, char *argv[]) {
                 printf("L2 TLB miss!\n");
                 num_l2_tlb_misses++;
             
-                // EXCEPTION: Walk the page table and update the TLB entry --- Hardware algo by KERNEL.c?
-                // DRIVER.c = KERNEL.c -- implement this to begin with(?)
-                // Separate out kernel structs and functions if required 
+                // EXCEPTION: Invoke page table walk and update the TLB entry
                 
-                // Update L2 TLB with the acquired entry -- KERNEL.c
+                // Update L2 TLB with the acquired entry -- KERNEL
                 update_L2_TLB (l2_tlb, page_number, 10*i);
                 printf("L2 TLB\n");
                 print_L2_tlb (l2_tlb);
                 
-                // Update L1 TLB with the acquired entry -- KERNEL.c?
+                // Update L1 TLB with the acquired entry -- KERNEL
                 update_L1_TLB (l1_tlb, page_number, 10*i);
                 printf("L1 TLB\n");
                 print_L1_tlb (l1_tlb);

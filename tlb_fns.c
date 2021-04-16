@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include "tlb.h"
 
+/* Creates an empty L1 TLB structure with the given specifications and initializes the structure by marking all the TLB entries as INVALID. */
+
 L1_TLB* initialize_L1_TLB () {
 
     // Create an empty L1 TLB structure
@@ -19,6 +21,8 @@ L1_TLB* initialize_L1_TLB () {
     
     return l1_tlb;
 }
+
+/* Creates an empty L2 TLB structure with the given specifications and initializes the structure by marking all the TLB entries as INVALID, and initializing all entries of LRU square matrix as 0. */
 
 L2_TLB* initialize_L2_TLB () {
 
@@ -47,7 +51,9 @@ L2_TLB* initialize_L2_TLB () {
     return l2_tlb;
 }
 
-int search_L1_TLB (L1_TLB* l1_tlb, int page_number) {
+/* Searches the L1 TLB for an entry corresponding to the given page number. If HIT returns corresponding frame number, else returns an invalid (out of range) frame number. */
+
+unsigned int search_L1_TLB (L1_TLB* l1_tlb, unsigned int page_number) {
     int frame_number = 0;
     int i = 0;
     int set_index = page_number % NUM_L1_TLB_SETS;
@@ -66,19 +72,17 @@ int search_L1_TLB (L1_TLB* l1_tlb, int page_number) {
     }
     
     // Entry found in L1 TLB -- return frame number
-    if (i < NUM_L1_TLB_WAYS) {
-        // flag = L1_TLB_HIT;
+    if (i < NUM_L1_TLB_WAYS) 
         return frame_number;
-    }
         
-    // Entry NOT found in L1 TLB -- set search flag to L1_TLB_MISS
-    else {
-        // flag = L1_TLB_MISS;
-        return -73;
-    }
+    // Entry NOT found in L1 TLB
+    else 
+        return 6553699; // Returning an invalid frame number to indicate a miss -- anything outside 0 <= frame_number < 65536( = 2^(25-9)) but within unsigned int range works // return -73;
 }
 
-int search_L2_TLB (L2_TLB* l2_tlb, int page_number) {
+/* Searches the L2 TLB for an entry corresponding to the given page number, if HIT updates LRU square matrix and returns corresponding frame number, else returns an invalid (out of range) frame number. */
+ 
+unsigned int search_L2_TLB (L2_TLB* l2_tlb, unsigned int page_number) {
     int frame_number = 0;
     int i = 0;
     int set_index = page_number % NUM_L2_TLB_SETS;
@@ -104,18 +108,15 @@ int search_L2_TLB (L2_TLB* l2_tlb, int page_number) {
     }
     
     // Entry found in L1 TLB -- return frame number
-    if (i < NUM_L2_TLB_WAYS) {
-        // flag = L2_TLB_HIT;
+    if (i < NUM_L2_TLB_WAYS) 
         return frame_number;
-    }
         
     // Entry NOT found in L1 TLB -- set search flag to L1_TLB_MISS
-    else {
-        // flag = L2_TLB_MISS;
-        return -73;
-    }
+    else 
+        return 6553699; // Returning an invalid frame number to indicate a miss -- anything outside 0 <= frame_number < 65536( = 2^(25-9)) but within unsigned int range works // return -73;
 }
 
+/* Updates the L1 TLB with the entry (page number, corresponding frame number) fetched from the main memory. Depending on the availability of free slots an entry is PLACED/REPLACED in the TLB. If an INVALID entry is available in any of the ways corresponding to the required set index, PLACE the new entry there. Else, REPLACE any of the way entries with required set index using RANDOM REPLACEMENT. */
 
 void update_L1_TLB (L1_TLB* l1_tlb, unsigned int page_number, unsigned int frame_number) {
    
@@ -146,6 +147,8 @@ void update_L1_TLB (L1_TLB* l1_tlb, unsigned int page_number, unsigned int frame
     }
 }
 
+/* Updates the L2 TLB with the entry (page number, corresponding frame number) fetched from the main memory. Depending on the availability of free slots an entry is PLACED/REPLACED in the TLB. If an INVALID entry is available in any of the ways corresponding to the required set index, PLACE the new entry there. Else, REPLACE the LRU way entry with required set index (way index obtained by checking the LRU square matrix corresponding to the required set index). */
+
 void update_L2_TLB (L2_TLB* l2_tlb, unsigned int page_number, unsigned int frame_number) {
    
     int i = 0;
@@ -175,6 +178,8 @@ void update_L2_TLB (L2_TLB* l2_tlb, unsigned int page_number, unsigned int frame
     }
 }
 
+/* Get the LRU way index for given set. (The LRU way index is given by the row number with all bits set to 0). */
+
 int get_LRU_entry_index (L2_TLB* l2_tlb, int set_index) {
     int LRU_entry_index = 0;
     int zero_count = 0;
@@ -194,11 +199,13 @@ int get_LRU_entry_index (L2_TLB* l2_tlb, int set_index) {
     return i;
 }
 
+/* Flushes all L1 TLB entries (except for the ones corresponding to shared pages), by marking them as INVALID. */
+
 void flush_L1_TLB (L1_TLB* l1_tlb) {
     int i = 0;
     int j = 0;
     
-    // Flush L1 TLB with all entries (except for SHARED) marked INVALID
+    // Flush L1 TLB with all entries (except for SHARED) -- mark INVALID
     for (i = 0; i < NUM_L1_TLB_SETS; i++) {
         for (j = 0; j < NUM_L1_TLB_WAYS; j++) {
             if (l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].shared_bit == NOT_SHARED)
@@ -207,12 +214,13 @@ void flush_L1_TLB (L1_TLB* l1_tlb) {
     }
 }
 
+/* Flushes all L2 TLB entries (except for the ones corresponding to shared pages), by marking them as INVALID and resets the LRU square matrices corresponding to all sets to 0. */
 void flush_L2_TLB (L2_TLB* l2_tlb) {
     int i = 0;
     int j = 0;
     int k = 0;
     
-    // Flush L2 TLB with all entries (except for SHARED) marked INVALID
+    // Flush L2 TLB with all entries (except for SHARED) -- mark INVALID
     for (i = 0; i < NUM_L2_TLB_SETS; i++) {
         for (j = 0; j < NUM_L2_TLB_WAYS; j++) {
             if (l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].shared_bit == NOT_SHARED)
@@ -220,7 +228,7 @@ void flush_L2_TLB (L2_TLB* l2_tlb) {
         }
     }
         
-    // Reset all the L2 TLB LRU counters to 0
+    // Reset all the L2 TLB LRU square matrices to 0
     for (i = 0; i < NUM_L2_TLB_SETS; i++) {
         for (j = 0; j < NUM_L2_TLB_WAYS; j++) {
             for (k = 0; k < NUM_L2_TLB_WAYS; k++) {
@@ -231,6 +239,8 @@ void flush_L2_TLB (L2_TLB* l2_tlb) {
     }
 }
 
+/* Prints all L1 TLB entries set-wise */
+
 void print_L1_tlb (L1_TLB* l1_tlb) {
     int i = 0;
     int j = 0;
@@ -238,9 +248,11 @@ void print_L1_tlb (L1_TLB* l1_tlb) {
     for (i = 0; i < NUM_L1_TLB_SETS; i++) {
         printf ("SET %d\n", i + 1);
         for (j = 0; j < NUM_L1_TLB_WAYS; j++)
-            printf(" Page Number: %d Frame Number: %d Valid Bit: %d Shared bit: %d\n", l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].page_tag_entry, l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].frame_number_entry, l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].valid_bit, l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].shared_bit);
+            printf(" Page Tag Number: %d Frame Number: %d Valid Bit: %d Shared bit: %d\n", l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].page_tag_entry, l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].frame_number_entry, l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].valid_bit, l1_tlb->l1_tlb_sets[i].l1_tlb_entry[j].shared_bit);
     }
 } 
+
+/* Prints all L2 TLB entries set-wise */
 
 void print_L2_tlb (L2_TLB* l2_tlb) {
     int i = 0;
@@ -249,7 +261,7 @@ void print_L2_tlb (L2_TLB* l2_tlb) {
     for (i = 0; i < NUM_L2_TLB_SETS; i++) {
         printf ("SET %d\n", i + 1);
         for (j = 0; j < NUM_L2_TLB_WAYS; j++)
-            printf(" Page Number: %d Frame Number: %d Valid Bit: %d Shared bit: %d\n", l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].page_tag_entry, l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].frame_number_entry, l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].valid_bit, l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].shared_bit);
+            printf(" Page Tag Number: %d Frame Number: %d Valid Bit: %d Shared bit: %d\n", l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].page_tag_entry, l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].frame_number_entry, l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].valid_bit, l2_tlb->l2_tlb_sets[i].l2_tlb_entry[j].shared_bit);
     }
 } 
 
