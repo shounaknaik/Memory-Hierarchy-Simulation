@@ -4,14 +4,17 @@
 #include "mainmemory.h"
 //#include "l2_cache.h"
 
-#define MAX_PAGE_COUNT 1000
+#define PAGE_TABLE_LIMIT 512
+#define PER_PROCESS_PAGE_LIMIT 256
 
 ///////TEMPORARY DECARATIONS TILL CODE IS INTEGRATED//
 typedef struct
 {
-    unsigned int pid;
+    unsigned int pid:16;
     unsigned int p_table_addr;
+    unsigned int page_count:8;
 } pcb;
+pcb temp_pcb;
 
 typedef struct 
 {
@@ -33,10 +36,9 @@ main_memory* mm;
 frame_table* f_table;
 second_chance_fifo_queue second_chance_fifo;
 int total_page_count;
-pcb temp_pcb;
 //////
 
-extern page_table* get_address(unsigned int block_number);
+extern page_table_entry* get_page_entry(unsigned int block_number);
 
 main_memory* main_memory_init()
 {
@@ -116,14 +118,47 @@ main_memory_block get_disk_block(unsigned int block_number, unsigned int pid)
     scn->second_chance_bit=1;
 
     total_page_count++;
-    if(total_page_count>MAX_PAGE_COUNT)
+    if(total_page_count>PAGE_TABLE_LIMIT)
     {
         second_chance_node* replaced = second_chance_fifo.tail->prev;
         replace_mm_block(replaced);
         total_page_count--;
     }
+    else if(temp_pcb.page_count >= PER_PROCESS_PAGE_LIMIT)
+    {
+        second_chance_node* replaced = second_chance_fifo.tail->prev;
+        while(1)
+        {
+            if(mm->f_table.entry_table[replaced->block_number]->pid == temp_pcb.pid)
+            {
+                if(replaced->second_chance_bit)
+                {
+                    replaced->second_chance_bit=0;
+                    
+                    second_chance_node* temp = replaced->prev;
+                    temp->next = replaced->next;
+                    replaced->next->prev = temp;
+                    
+                    replaced->next = second_chance_fifo.head->next;
+                    second_chance_fifo.head->next = replaced;
+                    replaced->prev = second_chance_fifo.head;
+                    replaced->next->prev = replaced;
+                    
+                    replaced = temp;
+                    continue;
+                }
+                else break;
+            }
+            replaced = replaced->prev;
+        }
+        replace_mm_block(replaced);
+        total_page_count--;
+        temp_pcb.page_count--;
+    }
+
     return mm_block;
 }
+// TODO: free frames and frame table entries.
 
 void replace_mm_block(second_chance_node* replaced)
 {
@@ -133,7 +168,7 @@ void replace_mm_block(second_chance_node* replaced)
         //Reset valid bit in page table to zero
         //Get PID of page involved
         unsigned int temppid = f_table->entry_table[replaced->block_number]->pid;
-        //Traverse through page tables till we get to reuired address
+        //Traverse through page tables till we get to required address
         //Set valid bit to 0
         //Remove node from fifo structure
         replaced->prev->next=replaced->next;
@@ -162,22 +197,19 @@ void replace_mm_block(second_chance_node* replaced)
         replaced=temp;
         replace_mm_block(replaced);
     }
-    //TODO: Change relevant page/frame tables
+    // TODO: Change relevant page/frame tables
+    // DONE
+    mm->f_table.entry_table[replaced->block_number]->valid_bit=INVALID; //Change frame table entry//
+
+    page_table_entry* page_lookup = get_page_entry(replaced->block_number);
+    page_lookup->valid_bit=INVALID; //Change page table entry//
 
     return;
 }
 
-// TODO: free frames and frame table entries.
-
-unsigned int get_data_address(unsigned int page_number)
-{
-    //Get outermost page table address from pcb
-    pcb temppcb;
-    int start_addr = temppcb.p_table_addr;
-    //Keep going down the page directories/tables
-    //TODO: 
-    //return frame number of the block; 
-}
+// unsigned int get_data_address(unsigned int page_number)
+// TODO: Get physical address from page number given
+// DONE: Check in pagetabe.c
 
 void frame_table_free(frame_table* f_table)
 {
