@@ -6,11 +6,13 @@
 
 #define MAX_PAGE_COUNT 1000
 
+///////TEMPORARY DECARATIONS TILL CODE IS INTEGRATED//
 typedef struct
 {
     unsigned int pid;
     unsigned int p_table_addr;
 } pcb;
+
 typedef struct 
 {
     unsigned int tag:5;
@@ -19,12 +21,22 @@ typedef struct
     unsigned int fifo_bits:4;
 } l2_cache_entry;
 
-///////TEMPORARY DECARATIONS TILL CODE IS INTEGRATED//
+typedef struct 
+{
+    unsigned int tag:5;
+    unsigned int data[8];
+    unsigned int valid_bit:1;
+    unsigned int fifo_bits:4;
+} l1_cache_entry;
+
 main_memory* mm;
+frame_table* f_table;
 second_chance_fifo_queue second_chance_fifo;
 int total_page_count;
 pcb temp_pcb;
 //////
+
+extern page_table* get_address(unsigned int block_number);
 
 main_memory* main_memory_init()
 {
@@ -52,7 +64,28 @@ frame_table* frame_table_init()
     return f_table;
 }
 
-l2_cache_entry get_mm_block(unsigned int block_number)
+// TODO: called from l1, but return to bot l1 and l2.
+// DONE.
+
+l1_cache_entry get_l1_block(unsigned int block_number)
+{
+    unsigned int frame_number = block_number/16;
+    unsigned int index = block_number%16;
+
+    unsigned int temp_data[8];
+
+    main_memory_block* temp = (mm->blocks[frame_number]);
+
+    l1_cache_entry l1_block;
+    for(int i=0;i<8;i++)
+    {
+        l1_block.data[i]=temp->entry[index+i];
+    }
+    l1_block.valid_bit = VALID;
+    return l1_block;
+}
+
+l2_cache_entry get_l2_block(unsigned int block_number)
 {
     unsigned int frame_number = block_number/8;
     unsigned int index = block_number%8;
@@ -97,6 +130,12 @@ void replace_mm_block(second_chance_node* replaced)
     //Check end of queue
     if(replaced->second_chance_bit==0)
     {
+        //Reset valid bit in page table to zero
+        //Get PID of page involved
+        unsigned int temppid = f_table->entry_table[replaced->block_number]->pid;
+        //Traverse through page tables till we get to reuired address
+        //Set valid bit to 0
+        //Remove node from fifo structure
         replaced->prev->next=replaced->next;
         replaced->next->prev=replaced->prev;
 
@@ -108,23 +147,35 @@ void replace_mm_block(second_chance_node* replaced)
     else
     {
         //Change bit to 0;
+        replaced->second_chance_bit=0;
         //assign new_head to replaced;
         //replaced=replaced->prev;
+        second_chance_node* temp = replaced->prev;
+        temp->next = replaced->next;
+        second_chance_fifo.tail->prev = temp;
         //send to head of queue;
+        replaced->next = second_chance_fifo.head->next;
+        second_chance_fifo.head->next = replaced;
+        replaced->prev = second_chance_fifo.head;
+        replaced->next->prev = replaced;
         //replace_mm_block(new_replaced);
+        replaced=temp;
+        replace_mm_block(replaced);
     }
-    //Change relevant page/frame tables
+    //TODO: Change relevant page/frame tables
 
     return;
 }
 
-unsigned int get_address(unsigned int page_number)
+// TODO: free frames and frame table entries.
+
+unsigned int get_data_address(unsigned int page_number)
 {
     //Get outermost page table address from pcb
     pcb temppcb;
     int start_addr = temppcb.p_table_addr;
     //Keep going down the page directories/tables
-    
+    //TODO: 
     //return frame number of the block; 
 }
 

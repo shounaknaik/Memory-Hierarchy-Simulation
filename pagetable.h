@@ -6,10 +6,10 @@
 
 typedef struct
 {
-    unsigned int page_number:23;
+    unsigned int page_number:23; //TODO: will be removed. page tables indexed by page number.
     unsigned int frame_number:16;
     unsigned int valid_bit:1;
-    unsigned int second_chance_bit:1;
+    unsigned int shared_bit:1;
 } page_table_entry;
 
 typedef struct
