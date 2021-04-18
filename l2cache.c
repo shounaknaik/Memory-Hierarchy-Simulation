@@ -19,12 +19,12 @@ l2_cache* initialize_L2_cache () {
 }
 
 
-unsigned int* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address) {
+data_byte* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address,data_byte* write_data, int access_type) {
 
     // should search in main memory simultaneosly. As this is look aside.
     //int data=search_main_memory();
     int i=0;
-    unsigned int* data;
+    data_byte data[32];
     int byte_offset=physical_address%6;
     int useful_data=physical_address>>6;//6 bits is byte offset
     int set_index = useful_data % NUM_L2_CACHE_SETS;
@@ -36,22 +36,46 @@ unsigned int* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_addre
         if (l2_cache_1->set_array[set_index].set_entries[i].valid_bit == VALID && l2_cache_1->set_array[set_index].set_entries[i].tag == tag) {
         
             // Get corresponding 64B data
-            data = l2_cache_1->set_array[set_index].set_entries[i].data;
             //printf ("Entry found in L2 Cache");
             break;
         }        
     }
+
     if (i < NUM_L2_CACHE_WAYS) {
-        // flag = L1_TLB_HIT;
-        //must give signal for Main Memory search to be stopped.
-        if(byte_offset<32)
+        
+        if(access_type==READ_ACCESS)
         {
+
+            if(byte_offset<32)
+            {
+                for(int j=0;j<32;j++)
+                {
+                    data[j]=l2_cache_1->set_array[set_index].set_entries[i].data[j];
+                }
+            }
+            else 
+            {
+                for(int j=0;j<32;j++)
+                {
+                    data[j+32]=l2_cache_1->set_array[set_index].set_entries[i].data[j];
+                }
+
+            }
             return data;
+
         }
         else 
         {
-            return (data+32*sizeof(int*));
+            //write. Write Through.
+            //call main memory function.
+             for(int j=0;j<64;j++)
+            {
+                    l2_cache_1->set_array[set_index].set_entries[i].data[j]=write_data[j];
+            }
+            //write same to MM
+            
         }
+      
     }
     else 
     {
@@ -63,10 +87,10 @@ unsigned int* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_addre
     }
 }
 
-void update_l2_cache (l2_cache* l2_cache_1, unsigned int* data,int set_index,int tag) {
+void update_l2_cache (l2_cache* l2_cache_1, data_byte* data,int set_index,int tag) {
    
     int i = 0; 
-   
+    
 
     // PLACEMENT: If there are INVALID entries in L2 Cache, PLACE this entry in the first INVALID entry's slot    
     // Look for INVALID entry corresponding to the given set index
@@ -75,7 +99,10 @@ void update_l2_cache (l2_cache* l2_cache_1, unsigned int* data,int set_index,int
 
 
             l2_cache_1->set_array[set_index].set_entries[i].tag = tag; 
-            l2_cache_1->set_array[set_index].set_entries[i].data = data; 
+            for(int j=0;j<64;j++)
+            {
+                l2_cache_1->set_array[set_index].set_entries[i].data[j]=data[j];
+            }
             l2_cache_1->set_array[set_index].set_entries[i].valid_bit = VALID;
             l2_cache_1->set_array[set_index].set_entries[i].fifo_bits = 16;//15+1
             update_fifo_l2_cache(l2_cache_1,set_index);
@@ -89,7 +116,10 @@ void update_l2_cache (l2_cache* l2_cache_1, unsigned int* data,int set_index,int
     if (i == NUM_L2_CACHE_WAYS) {
         int FIFO_replacement = get_FIFO_replacement (l2_cache_1, set_index);
         l2_cache_1->set_array[set_index].set_entries[FIFO_replacement].tag = tag; 
-        l2_cache_1->set_array[set_index].set_entries[FIFO_replacement].data = data; 
+        for(int j=0;j<64;j++)
+        {
+            l2_cache_1->set_array[set_index].set_entries[FIFO_replacement].data[j]=data[j];
+        }
         l2_cache_1->set_array[set_index].set_entries[FIFO_replacement].valid_bit = VALID;
         l2_cache_1->set_array[set_index].set_entries[FIFO_replacement].fifo_bits = 16;//15+1
         update_fifo_l2_cache(l2_cache_1,set_index);
