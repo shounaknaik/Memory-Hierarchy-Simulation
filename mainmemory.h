@@ -6,6 +6,8 @@
 
 #include "pagetable.h"
 
+extern int frame_table_index;
+
 typedef struct
 {
     unsigned int frame_number:16; //TODO: will be removed, frame table indexed by frame number.
@@ -20,13 +22,17 @@ typedef struct
     frame_table_entry* entry_table[63488];
 } frame_table;
 
+typedef struct 
+{
+    unsigned int data:8;
+}data_byte;
+
 
 typedef struct 
 {
-    unsigned short int entry[512];
+    data_byte entry[512];
 } main_memory_block;
 
-//TODO: Implement a separate global page table;
 typedef struct
 {
     frame_table f_table;
@@ -39,7 +45,7 @@ typedef struct
 
 typedef struct 
 {
-    unsigned int block_number:16;
+    unsigned int block_number:16; //Physical block address
     main_memory_block* data;
     second_chance_node* prev;
     second_chance_node* next;
