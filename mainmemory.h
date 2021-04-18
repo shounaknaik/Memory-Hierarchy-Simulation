@@ -17,18 +17,20 @@ typedef struct
 
 typedef struct 
 {
-    frame_table_entry* entry_table[65536];
+    frame_table_entry* entry_table[63488];
 } frame_table;
 
 
 typedef struct 
 {
-    unsigned int entry[128];
+    unsigned short int entry[512];
 } main_memory_block;
 
+//TODO: Implement a separate global page table;
 typedef struct
 {
     frame_table f_table;
+    // page_table* global_pages[1024];
     page_table* p_tables[1024]; //CHANGED from 65536 to 1024//
     main_memory_block* blocks[63488]; //65536 - 2048. 1024 each for page table and frame table//
     unsigned int total_access_count;
