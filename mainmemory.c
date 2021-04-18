@@ -14,36 +14,38 @@ typedef struct
     unsigned int p_table_addr;
     unsigned int page_count:8;
 } pcb;
-pcb temp_pcb;
+pcb* temp_pcb;
 
 typedef struct 
 {
     unsigned int tag:5;
-    unsigned int data[16];
+    data_byte data[64];
     unsigned int valid_bit:1;
     unsigned int fifo_bits:4;
-} l2_cache_entry;
+} l2_cache_block;
 
 typedef struct 
 {
     unsigned int tag:5;
-    unsigned int data[8];
+    data_byte data[32];
     unsigned int valid_bit:1;
     unsigned int fifo_bits:4;
-} l1_cache_entry;
+} l1_cache_block;
 
 main_memory* mm;
 frame_table* f_table;
 second_chance_fifo_queue second_chance_fifo;
 int total_page_count;
+int frame_table_index;
 //////
 
-extern page_table_entry* get_page_entry(unsigned int block_number);
+extern page_table_entry* get_page_entry(unsigned int block_number, pcb* temp_pcb);
 
 main_memory* main_memory_init()
 {
     main_memory* mm;
     mm = (main_memory*)malloc(sizeof(main_memory));
+    frame_table_index=0;
     return mm;
 }
 
@@ -69,37 +71,33 @@ frame_table* frame_table_init()
 // TODO: called from l1, but return to bot l1 and l2.
 // DONE.
 
-l1_cache_entry get_l1_block(unsigned int block_number)
+l1_cache_block get_l1_block(unsigned int block_number)
 {
     unsigned int frame_number = block_number/16;
     unsigned int index = block_number%16;
 
-    unsigned int temp_data[8];
-
     main_memory_block* temp = (mm->blocks[frame_number]);
 
-    l1_cache_entry l1_block;
-    for(int i=0;i<8;i++)
+    l1_cache_block l1_block;
+    for(int i=0;i<32;i++)
     {
-        l1_block.data[i]=temp->entry[index+i];
+        l1_block.data[i].data=temp->entry[(4*index)+i].data;
     }
     l1_block.valid_bit = VALID;
     return l1_block;
 }
 
-l2_cache_entry get_l2_block(unsigned int block_number)
+l2_cache_block get_l2_block(unsigned int block_number)
 {
     unsigned int frame_number = block_number/8;
     unsigned int index = block_number%8;
 
-    unsigned int temp_data[16];
-
     main_memory_block* temp = (mm->blocks[frame_number]);
 
-    l2_cache_entry l2_block;
-    for(int i=0;i<16;i++)
+    l2_cache_block l2_block;
+    for(int i=0;i<64;i++)
     {
-        l2_block.data[i]=temp->entry[index+i];
+        l2_block.data[i].data=temp->entry[(4*index)+i].data;
     }
     l2_block.valid_bit = VALID;
     return l2_block;
@@ -116,20 +114,25 @@ main_memory_block get_disk_block(unsigned int block_number, unsigned int pid)
     second_chance_fifo.head->next = scn;
     scn->next->prev = scn;
     scn->second_chance_bit=1;
+    mm->f_table.entry_table[block_number]->valid_bit=VALID;
+    mm->f_table.entry_table[block_number]->frame_number=block_number;
+    mm->f_table.entry_table[block_number]->pid=pid;
 
     total_page_count++;
+    temp_pcb->page_count++;
+    
     if(total_page_count>PAGE_TABLE_LIMIT)
     {
         second_chance_node* replaced = second_chance_fifo.tail->prev;
         replace_mm_block(replaced);
         total_page_count--;
     }
-    else if(temp_pcb.page_count >= PER_PROCESS_PAGE_LIMIT)
+    else if(temp_pcb->page_count >= PER_PROCESS_PAGE_LIMIT)
     {
         second_chance_node* replaced = second_chance_fifo.tail->prev;
         while(1)
         {
-            if(mm->f_table.entry_table[replaced->block_number]->pid == temp_pcb.pid)
+            if(mm->f_table.entry_table[replaced->block_number]->pid == pid)
             {
                 if(replaced->second_chance_bit)
                 {
@@ -153,7 +156,7 @@ main_memory_block get_disk_block(unsigned int block_number, unsigned int pid)
         }
         replace_mm_block(replaced);
         total_page_count--;
-        temp_pcb.page_count--;
+        temp_pcb->page_count--;
     }
 
     return mm_block;
@@ -168,15 +171,19 @@ void replace_mm_block(second_chance_node* replaced)
         //Reset valid bit in page table to zero
         //Get PID of page involved
         unsigned int temppid = f_table->entry_table[replaced->block_number]->pid;
+        unsigned int page_no = f_table->entry_table[replaced->block_number]->page_number;
+        // temp_pcb = &(process_table[pid]);
         //Traverse through page tables till we get to required address
+        page_table_entry* page_entry = get_page_entry(page_no, temp_pcb);
         //Set valid bit to 0
+        page_entry->valid_bit=INVALID;
         //Remove node from fifo structure
         replaced->prev->next=replaced->next;
         replaced->next->prev=replaced->prev;
 
         //Remove node
         free(replaced->data);
-        free(replaced->second_chance_bit);
+        // free(replaced->second_chance_bit);
         free(replaced);
     }
     else
@@ -197,19 +204,18 @@ void replace_mm_block(second_chance_node* replaced)
         replaced=temp;
         replace_mm_block(replaced);
     }
-    // TODO: Change relevant page/frame tables
-    // DONE
+
     mm->f_table.entry_table[replaced->block_number]->valid_bit=INVALID; //Change frame table entry//
 
-    page_table_entry* page_lookup = get_page_entry(replaced->block_number);
+    //temp_pcb = &(process_table[f_table->entry_table[replaced->block_number]->pid]);
+    page_table_entry* page_lookup = get_page_entry(f_table->entry_table[replaced->block_number]->page_number, temp_pcb);
     page_lookup->valid_bit=INVALID; //Change page table entry//
 
     return;
 }
 
 // unsigned int get_data_address(unsigned int page_number)
-// TODO: Get physical address from page number given
-// DONE: Check in pagetabe.c
+// Check in pagetabe.c
 
 void frame_table_free(frame_table* f_table)
 {
