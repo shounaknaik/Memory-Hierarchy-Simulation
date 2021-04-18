@@ -13,10 +13,12 @@ typedef struct
 {
     unsigned int pid;
     page_table* p_table_addr;
+    unsigned int page_count;
 } pcb;
 // pcb temp_pcb;
 main_memory* mm;
 page_table_lru_queue page_table_lru;
+second_chance_fifo_queue second_chance_fifo;
 int total_page_count;
 int page_table_index;
 int frame_table_index;
@@ -73,6 +75,7 @@ page_table_lru_node* page_table_init(/*should take block number as arg*/)
     page_table_lru.head->next = ptln;
     ptln->next->prev = ptln;
     page_table_index++;
+    total_page_count++;
     if(page_table_index>PAGE_TABLE_LIMIT)
     {
         page_table_lru_node* replaced = page_table_lru.tail->prev;
@@ -167,6 +170,21 @@ page_table_entry* get_page_entry(unsigned int block_number /*virtual*/, pcb* tem
             index++;
         }
         main_memory_block temp = get_disk_block(index, temp_pcb->pid);
+        main_memory_block mm_block = *(main_memory_block*)malloc(sizeof(main_memory_block));
+        second_chance_node* scn = (second_chance_node*)malloc(sizeof(second_chance_node));
+        scn->data = &mm_block;
+        scn->block_number = index;
+        scn->prev = second_chance_fifo.head;
+        scn->next = second_chance_fifo.head->next;
+        second_chance_fifo.head->next = scn;
+        scn->next->prev = scn;
+        scn->second_chance_bit=1;
+        mm->f_table.entry_table[index]->valid_bit=VALID;
+        mm->f_table.entry_table[index]->frame_number=block_number;
+        mm->f_table.entry_table[index]->pid=temp_pcb->pid;
+
+        total_page_count++;
+        temp_pcb->page_count++;
         mm->f_table.entry_table[index]->page_number=block_number;
     }
     retval = &(mm->p_tables[inner]->entry_table[frameindex]);

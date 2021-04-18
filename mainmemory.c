@@ -4,11 +4,11 @@
 #include "mainmemory.h"
 //#include "l2_cache.h"
 
-#define PAGE_TABLE_LIMIT 512
+#define PAGE_TABLE_LIMIT 1024
 #define PER_PROCESS_PAGE_LIMIT 256
 
 ///////TEMPORARY DECARATIONS TILL CODE IS INTEGRATED//
-typedef struct
+typedef struct pcb
 {
     unsigned int pid:16;
     unsigned int p_table_addr;
@@ -16,7 +16,7 @@ typedef struct
 } pcb;
 pcb* temp_pcb;
 
-typedef struct 
+typedef struct l2_cache_block
 {
     unsigned int tag:5;
     data_byte data[64];
@@ -24,7 +24,7 @@ typedef struct
     unsigned int fifo_bits:4;
 } l2_cache_block;
 
-typedef struct 
+typedef struct l1_cache_block
 {
     unsigned int tag:5;
     data_byte data[32];
@@ -46,6 +46,8 @@ main_memory* main_memory_init()
     main_memory* mm;
     mm = (main_memory*)malloc(sizeof(main_memory));
     frame_table_index=0;
+    mm->total_access_count=0;
+    mm->access_hit_count=0;
     return mm;
 }
 
@@ -67,9 +69,6 @@ frame_table* frame_table_init()
     f_table = (frame_table*)malloc(sizeof(frame_table));
     return f_table;
 }
-
-// TODO: called from l1, but return to bot l1 and l2.
-// DONE.
 
 l1_cache_block get_l1_block(unsigned int block_number)
 {
@@ -161,7 +160,6 @@ main_memory_block get_disk_block(unsigned int block_number, unsigned int pid)
 
     return mm_block;
 }
-// TODO: free frames and frame table entries.
 
 void replace_mm_block(second_chance_node* replaced)
 {
@@ -226,5 +224,19 @@ void frame_table_free(frame_table* f_table)
 void main_memory_free(main_memory* mm)
 {
     free(mm);
+    return;
+}
+
+void write_to_main_memory(unsigned int physical_address, data_byte* write_data)
+{
+    unsigned int frame_number=physical_address/512;
+    unsigned int byte_offset=physical_address%512;
+    
+    main_memory_block* temp = (mm->blocks[frame_number]);
+
+    for(int i=0;i<64;i++)
+    {
+        temp->entry[byte_offset/8+i]=write_data[i];
+    }
     return;
 }

@@ -8,7 +8,7 @@
 
 extern int frame_table_index;
 
-typedef struct
+typedef struct frame_table_entry
 {
     unsigned int frame_number:16; //TODO: will be removed, frame table indexed by frame number.
     unsigned int pid:16;
@@ -17,23 +17,22 @@ typedef struct
     unsigned int modified_bit:1;
 } frame_table_entry;
 
-typedef struct 
+typedef struct frame_table
 {
     frame_table_entry* entry_table[63488];
 } frame_table;
 
-typedef struct 
+typedef struct data_byte
 {
     unsigned int data:8;
-}data_byte;
+} data_byte;
 
-
-typedef struct 
+typedef struct main_memory_block
 {
     data_byte entry[512];
 } main_memory_block;
 
-typedef struct
+typedef struct main_memory
 {
     frame_table f_table;
     // page_table* global_pages[1024];
@@ -43,7 +42,7 @@ typedef struct
     unsigned int access_hit_count;
 } main_memory;
 
-typedef struct 
+typedef struct second_chance_node
 {
     unsigned int block_number:16; //Physical block address
     main_memory_block* data;
@@ -52,11 +51,10 @@ typedef struct
     unsigned int second_chance_bit:1;
 } second_chance_node;
 
-typedef struct 
+typedef struct second_chance_fifo_queue
 {
     second_chance_node* head;
     second_chance_node* tail;
 } second_chance_fifo_queue;
-
 
 #endif
