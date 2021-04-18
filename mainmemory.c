@@ -36,6 +36,7 @@ main_memory* mm;
 frame_table* f_table;
 second_chance_fifo_queue second_chance_fifo;
 int total_page_count;
+int frame_table_index;
 //////
 
 extern page_table_entry* get_page_entry(unsigned int block_number, pcb* temp_pcb);
@@ -113,6 +114,9 @@ main_memory_block get_disk_block(unsigned int block_number, unsigned int pid)
     second_chance_fifo.head->next = scn;
     scn->next->prev = scn;
     scn->second_chance_bit=1;
+    mm->f_table.entry_table[block_number]->valid_bit=VALID;
+    mm->f_table.entry_table[block_number]->frame_number=block_number;
+    mm->f_table.entry_table[block_number]->pid=pid;
 
     total_page_count++;
     temp_pcb->page_count++;

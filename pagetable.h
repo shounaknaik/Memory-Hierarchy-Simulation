@@ -7,7 +7,7 @@
 typedef union pageframe
 {
     unsigned int frame_num:16;
-    unsigned int p_table_index;
+    unsigned int p_table_index:11;
 }p_f_address;
 
 typedef struct
@@ -21,6 +21,22 @@ typedef struct
 typedef struct
 {
     page_table_entry entry_table[128];
+    unsigned int granularity:1;
 } page_table;
+
+typedef struct
+{
+    unsigned int start_index;
+    unsigned int p_table_index:11;
+    page_table* data;
+    page_table_lru_node* prev;
+    page_table_lru_node* next;
+} page_table_lru_node;
+
+typedef struct 
+{
+    page_table_lru_node* head;
+    page_table_lru_node* tail;
+} page_table_lru_queue;
 
 #endif
