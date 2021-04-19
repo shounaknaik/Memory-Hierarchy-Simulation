@@ -42,14 +42,16 @@ typedef struct main_memory
     unsigned int access_hit_count;
 } main_memory;
 
-typedef struct second_chance_node
+typedef struct second_chance_node second_chance_node;
+
+struct second_chance_node
 {
     unsigned int block_number:16; //Physical block address
     main_memory_block* data;
     second_chance_node* prev;
     second_chance_node* next;
     unsigned int second_chance_bit:1;
-} second_chance_node;
+};
 
 typedef struct second_chance_fifo_queue
 {

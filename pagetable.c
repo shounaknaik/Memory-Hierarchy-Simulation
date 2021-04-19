@@ -39,6 +39,7 @@ page_table_lru_queue page_table_lru_init()
 
 void invalidate_page(unsigned int p_table_index)
 {
+    // printf("invalidating page");
     page_table* p_table = mm->p_tables[p_table_index];
     for(int i=0;i<128;i++)
     {
@@ -57,8 +58,11 @@ void invalidate_page(unsigned int p_table_index)
 void replace_page_table(page_table_lru_node* replaced)
 {
     //INVALIDATE ENTRIES
-    replaced->prev->next=replaced->next;
-    replaced->next->prev=replaced->prev;
+    // printf("replace page table called");
+    page_table_lru_node* temp = replaced->prev;
+    temp->next=replaced->next;
+    temp = replaced->next;
+    temp->prev=replaced->prev;
     free(replaced->data);
     // free(replaced->p_table_index);
     // free(replaced->start_index);
@@ -67,13 +71,17 @@ void replace_page_table(page_table_lru_node* replaced)
 
 page_table_lru_node* page_table_init(/*should take block number as arg*/)
 {
+    // printf("page table init called\n");
+    // increment page access    
+    // increment page miss
     page_table* p_table = (page_table*)malloc(sizeof(page_table));
     page_table_lru_node* ptln = (page_table_lru_node*)malloc(sizeof(page_table_lru_node));
     ptln->data = p_table;
     ptln->prev = page_table_lru.head;
     ptln->next = page_table_lru.head->next;
     page_table_lru.head->next = ptln;
-    ptln->next->prev = ptln;
+    page_table_lru_node* temp = ptln->next;
+    temp->prev = ptln;
     page_table_index++;
     total_page_count++;
     if(page_table_index>PAGE_TABLE_LIMIT)
@@ -85,7 +93,7 @@ page_table_lru_node* page_table_init(/*should take block number as arg*/)
     ptln->p_table_index=page_table_index;
     
     //initialize entries//
-    for(int i=0;i<64;i++)
+    for(int i=0;i<128;i++)
     {
         (*p_table).entry_table[i].valid_bit = INVALID;
     }
@@ -93,8 +101,9 @@ page_table_lru_node* page_table_init(/*should take block number as arg*/)
     // return p_table;
 }
 
-page_table_entry* get_page_entry(unsigned int block_number /*virtual*/, pcb* temp_pcb) //page table walk
+page_table_entry* get_page_entry(unsigned int block_number /*virtual address*/, pcb* temp_pcb) //page table walk
 {
+    // printf("get page entry called\n");
     page_table* outer = temp_pcb->p_table_addr;
     unsigned int middle, inner;
     unsigned int outerindex = block_number >> 14;
@@ -169,7 +178,7 @@ page_table_entry* get_page_entry(unsigned int block_number /*virtual*/, pcb* tem
         {
             index++;
         }
-        main_memory_block temp = get_disk_block(index, temp_pcb->pid);
+        // main_memory_block temp = get_disk_block(index, temp_pcb->pid);
         main_memory_block mm_block = *(main_memory_block*)malloc(sizeof(main_memory_block));
         second_chance_node* scn = (second_chance_node*)malloc(sizeof(second_chance_node));
         scn->data = &mm_block;
@@ -195,6 +204,7 @@ page_table_entry* get_page_entry(unsigned int block_number /*virtual*/, pcb* tem
 main_memory_block* get_address(unsigned int block_number, pcb* temp_pcb)
 {
     //Get page table entry;
+    // printf("get address called");
     page_table_entry* page_entry = get_page_entry(block_number, temp_pcb);
     unsigned int frame_address = page_entry->pageframe.frame_num;
     return mm->blocks[frame_address];
@@ -202,6 +212,20 @@ main_memory_block* get_address(unsigned int block_number, pcb* temp_pcb)
 
 void page_table_free(page_table* p_table)
 {
+    // printf("invalidating page");
+    for(int i=0;i<128;i++)
+    {
+        if(p_table->entry_table[i].valid_bit==VALID)
+        {
+            if(p_table->granularity==1)
+            {
+                invalidate_page(p_table->entry_table[i].pageframe.p_table_index);
+                unsigned int temp = p_table->entry_table[i].pageframe.p_table_index;
+                page_table_free(&(mm->p_tables[temp]));
+            }
+            p_table->entry_table[i].valid_bit==INVALID;
+        }
+    }
     free(p_table);
     return;
 }
