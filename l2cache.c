@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "l2_cache.h"
+//#include "main_memory.h"
 
 
 l2_cache* initialize_L2_cache () {
@@ -24,7 +25,8 @@ data_byte* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address,
     // should search in main memory simultaneosly. As this is look aside.
     //int data=search_main_memory();
     int i=0;
-    data_byte data[32];
+    data_byte* data;
+    data=malloc(sizeof(data_byte)*32);
     int byte_offset=physical_address%6;
     int useful_data=physical_address>>6;//6 bits is byte offset
     int set_index = useful_data % NUM_L2_CACHE_SETS;
@@ -67,12 +69,27 @@ data_byte* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address,
         else 
         {
             //write. Write Through.
-            //call main memory function.
              for(int j=0;j<64;j++)
             {
                     l2_cache_1->set_array[set_index].set_entries[i].data[j]=write_data[j];
             }
             //write same to MM
+            //call write through mem function written below
+            /*  void write_to_main_memory(unsigned int physical_address, databyte* write_data)
+            {
+                unsigned int frame_number=physical_address/512;
+                unsigned int byte_offset=physical_address%512;
+                
+                main_memory_block* temp = (mm->blocks[frame_number]);
+
+                for(int i=0;i<64;i++)
+                {
+                    temp->entry[byte_offset%8+i]=write_data[i];
+                }
+
+            }
+            */
+            return data;//just something to return , to signal the PA is there in the cache.
             
         }
       
@@ -80,16 +97,23 @@ data_byte* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address,
     else 
     {
          //Miss . Wait for Main Memory search. 
-        update_l2_cache(l2_cache_1,data,set_index,tag);//Should get 64 bytes from MM
+        //data_byte* recieved_data=malloc(64*sizeof(data_byte));
+        //recieved_data=get_l2_block(physical_address>>6);
+        data_byte recieved_data[64];
+        update_l2_cache(l2_cache_1,recieved_data,physical_address);//Should get 64 bytes from MM
         
-        return -73;
+        return NULL;
 
     }
 }
 
-void update_l2_cache (l2_cache* l2_cache_1, data_byte* data,int set_index,int tag) {
+void update_l2_cache (l2_cache* l2_cache_1, data_byte* data,unsigned int physical_address) {
    
     int i = 0; 
+    int byte_offset=physical_address%6;
+    int useful_data=physical_address>>6;//6 bits is byte offset
+    int set_index = useful_data % NUM_L2_CACHE_SETS;
+    int tag = useful_data>> NUM_L2_CACHE_SET_INDEX_BITS;  
     
 
     // PLACEMENT: If there are INVALID entries in L2 Cache, PLACE this entry in the first INVALID entry's slot    
@@ -143,6 +167,25 @@ int get_FIFO_replacement(l2_cache* l2_cache_1,int set_index)
         }        
     }
 
+}
+
+void print_L2_cache (l2_cache *l2_cache_1) {
+
+    for (int i = 0; i < NUM_L2_CACHE_SETS; i++) {
+        if(i==28)
+        {
+            printf ("SET %d\n", i + 1);
+            for (int j = 0; j < NUM_L2_CACHE_WAYS; j++) {
+                printf(" Main Tag: %d Valid Bit: %d \n", l2_cache_1->set_array[i].set_entries[j].tag, l2_cache_1->set_array[i].set_entries[j].valid_bit);
+                printf("\n\n");
+            }
+
+        }
+        
+  
+    }
+        
+    
 }
 
 
