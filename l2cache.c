@@ -101,8 +101,8 @@ data_byte* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address,
         //l2_cache_entry entry=get_l2_block(physical_address>>6);
         //recieved_data=entry->data;
 
-        data_byte recieved_data[64];//comment this out when integrating
-        update_l2_cache(l2_cache_1,recieved_data,physical_address);//Should get 64 bytes from MM
+        //data_byte recieved_data[64];//comment this out when integrating
+        //update_l2_cache(l2_cache_1,recieved_data,physical_address);//Should get 64 bytes from MM
         
         return NULL;
 
