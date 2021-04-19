@@ -58,5 +58,5 @@ typedef struct second_chance_fifo_queue
     second_chance_node* head;
     second_chance_node* tail;
 } second_chance_fifo_queue;
-
+extern second_chance_fifo_queue* second_chance_fifo;
 #endif
