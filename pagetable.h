@@ -24,14 +24,16 @@ typedef struct
     unsigned int granularity:1;
 } page_table;
 
-typedef struct
+typedef struct page_table_lru_node page_table_lru_node;
+
+struct page_table_lru_node
 {
     unsigned int start_index;
     unsigned int p_table_index:11;
     page_table* data;
     page_table_lru_node* prev;
     page_table_lru_node* next;
-} page_table_lru_node;
+};
 
 typedef struct 
 {
