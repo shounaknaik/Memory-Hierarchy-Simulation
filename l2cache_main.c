@@ -25,7 +25,7 @@ int main (int argc, char *argv[]) {
     srand(time(0)); 
     
     // Initialize L1 TLB
-    l2_cache *l2cache_1;
+    L2_cache *l2cache_1;
     l2cache_1 = initialize_L2_cache();
     
     // Read memory requests from file

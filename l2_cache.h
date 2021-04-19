@@ -31,16 +31,16 @@ typedef struct set_entry
     l2_cache_entry set_entries[16];
 } set_entry;
 
-typedef struct l2_cache
+typedef struct L2_cache
 {
     set_entry set_array[32];//32 sets must be there
-} l2_cache;
+} L2_cache;
 
-l2_cache* initialize_L2_cache ();
-data_byte* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address,data_byte* write_data, int access_type);
-void update_l2_cache (l2_cache* l2_cache_1, data_byte* data,unsigned int physical_address);
-void update_fifo_l2_cache(l2_cache* l2_cache_1, int set_index);
-int get_FIFO_replacement(l2_cache* l2_cache_1,int set_index);
-void print_L2_cache (l2_cache *l2_cache_1);
+L2_cache* initialize_L2_cache ();
+data_byte* search_L2_cache (L2_cache* l2_cache_1, unsigned int physical_address,data_byte* write_data, int access_type);
+void update_l2_cache (L2_cache* l2_cache_1, data_byte* data,unsigned int physical_address);
+void update_fifo_l2_cache(L2_cache* l2_cache_1, int set_index);
+int get_FIFO_replacement(L2_cache* l2_cache_1,int set_index);
+void print_L2_cache (L2_cache *l2_cache_1);
 
 #endif

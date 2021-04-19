@@ -4,11 +4,11 @@
 //#include "main_memory.h"
 
 
-l2_cache* initialize_L2_cache () {
+L2_cache* initialize_L2_cache () {
 
     // Create an empty L2 Cache structure
-    l2_cache *l2_cache_1;
-    l2_cache_1 = (l2_cache *) malloc (sizeof (l2_cache)); //  l1_tlb = (L1_TLB *) malloc (sizeof (L1_TLB));
+    L2_cache *l2_cache_1;
+    l2_cache_1 = (L2_cache *) malloc (sizeof (L2_cache)); //  l1_tlb = (L1_TLB *) malloc (sizeof (L1_TLB));
     
     // Initialize the L2 cache with all entries marked INVALID
     for (int i = 0; i < NUM_L2_CACHE_SETS; i++) {
@@ -20,7 +20,7 @@ l2_cache* initialize_L2_cache () {
 }
 
 
-data_byte* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address,data_byte* write_data, int access_type) {
+data_byte* search_L2_cache (L2_cache* l2_cache_1, unsigned int physical_address,data_byte* write_data, int access_type) {
 
     // should search in main memory simultaneosly. As this is look aside.
     //int data=search_main_memory();
@@ -107,9 +107,10 @@ data_byte* search_L2_cache (l2_cache* l2_cache_1, unsigned int physical_address,
         return NULL;
 
     }
+
 }
 
-void update_l2_cache (l2_cache* l2_cache_1, data_byte* data,unsigned int physical_address) {
+void update_l2_cache (L2_cache* l2_cache_1, data_byte* data,unsigned int physical_address) {
    
     int i = 0; 
     int byte_offset=physical_address%6;
@@ -152,7 +153,7 @@ void update_l2_cache (l2_cache* l2_cache_1, data_byte* data,unsigned int physica
     }
 }
 
-void update_fifo_l2_cache(l2_cache* l2_cache_1, int set_index)
+void update_fifo_l2_cache(L2_cache* l2_cache_1, int set_index)
 {
     int i;
     for (i = 0; i < NUM_L2_CACHE_WAYS; i++) {
@@ -161,7 +162,7 @@ void update_fifo_l2_cache(l2_cache* l2_cache_1, int set_index)
         }        
     }
 }
-int get_FIFO_replacement(l2_cache* l2_cache_1,int set_index)
+int get_FIFO_replacement(L2_cache* l2_cache_1,int set_index)
 {
     for (int i = 0; i < NUM_L2_CACHE_WAYS; i++) {
         if (l2_cache_1->set_array[set_index].set_entries[i].fifo_bits == 0) {
@@ -171,7 +172,7 @@ int get_FIFO_replacement(l2_cache* l2_cache_1,int set_index)
 
 }
 
-void print_L2_cache (l2_cache *l2_cache_1) {
+void print_L2_cache (L2_cache *l2_cache_1) {
 
     for (int i = 0; i < NUM_L2_CACHE_SETS; i++) {
         if(i==28)
