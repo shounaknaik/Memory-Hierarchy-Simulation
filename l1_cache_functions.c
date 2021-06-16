@@ -3,7 +3,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "l1_cache.h"
+// #include "l1_cache.h"
+#include "cache.h"
 
 /* Creates an empty L1 cache structure with the given specifications and initializes all the entries. */
 
@@ -86,10 +87,11 @@ unsigned int search_L1_cache (L1_cache* l1_cache, unsigned int physical_address,
                 if (access_type == READ_ACCESS) {
  
                     // Read 1 byte of data from L1 cache datablock (location in datablock given by offset)
-                    data = l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].data_blocks[offset];     
+                    data = l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].data_blocks[offset].data;     
  
                     // Update LRU counter corresponding to this set index
-                    update_LRU_counter(l1_cache, set_index, i);    
+                    // update_LRU_counter(l1_cache, set_index, i);
+                    update_L1_LRU_counter(l1_cache, set_index, i);    
                     
                     return data;
                 }
@@ -98,7 +100,7 @@ unsigned int search_L1_cache (L1_cache* l1_cache, unsigned int physical_address,
                 else if (access_type == WRITE_ACCESS && l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].write_bit == READ_WRITE) {
                     
                     // Write 1 byte of data into L1 cache datablock (location in datablock given by offset)
-                    l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].data_blocks[offset] = write_data;
+                    l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].data_blocks[offset].data = write_data;
                     
                     // Set the dirty bit to indicate that the data is modified in L1 cache (write-back policy)
                     l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].dirty_bit = DIRTY;
@@ -166,6 +168,7 @@ void L1_cache_way_halting_function (L1_cache* l1_cache, unsigned int halt_tag) {
 /* Updates the L1 cache with the datablock fetched from the next level i.e. L2 cache and main memory (look-aside). Depending on the availability of free slots an entry is PLACED/REPLACED in the L1 cache. If an INVALID entry is available in any of the ways corresponding to the required set index, PLACE the new entry there. Else, REPLACE any of the way entries with required set index using LRU REPLACEMENT. */
 
 void update_L1_cache (L1_cache* l1_cache, L2_cache* l2_cache, unsigned int *data, unsigned int physical_address) {
+// void update_L1_cache (L1_cache* l1_cache, L2_cache* l2_cache, data_byte *data, unsigned int physical_address) {
     unsigned int tag = 0;         // L1 cache tag bits
     unsigned int set_index = 0;   // L1 cache set index bits
     unsigned int offset = 0;      // L1 cache byte offset bits
