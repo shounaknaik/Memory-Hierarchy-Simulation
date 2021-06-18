@@ -21,12 +21,12 @@ typedef struct pcb
     unsigned int num_main_memory_misses;
 } PCB;
 
-typedef struct Proc_Access_Info
-{
-    unsigned int pid:16;
-    unsigned int num_main_memory_hits;
-    unsigned int num_main_memory_misses;
-} Proc_Access_Info;
+// typedef struct Proc_Access_Info
+// {
+//     unsigned int pid:16;
+//     unsigned int num_main_memory_hits;
+//     unsigned int num_main_memory_misses;
+// } Proc_Access_Info;
 //////
 
 main_memory* mm;
@@ -35,7 +35,7 @@ int total_page_count;
 int page_table_index;
 int frame_table_index;
 
-extern main_memory_block get_disk_block(unsigned int block_number, unsigned int pid);
+extern main_memory_block* get_disk_block(unsigned int block_number, unsigned int pid);
 
 page_table_lru_queue page_table_lru_init()
 {

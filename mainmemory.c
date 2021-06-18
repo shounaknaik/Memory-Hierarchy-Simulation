@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "pagetable.h"
@@ -17,13 +18,20 @@ typedef struct pcb
 } pcb;
 pcb* temp_pcb;
 
-typedef struct Proc_Access_Info
-{
-    unsigned int pid:16;
-    unsigned int num_main_memory_hits;
-    unsigned int num_main_memory_misses;
-} Proc_Access_Info;
+// typedef struct Proc_Access_Info
+// {
+//     unsigned int pid:16;
+//     unsigned int num_main_memory_hits;
+//     unsigned int num_main_memory_misses;
+// } Proc_Access_Info;
 Proc_Access_Info* temp_pai;
+
+void pcb_init()
+{
+    temp_pcb = (pcb*)malloc(sizeof(pcb));
+    printf("pcb init\n");
+    return;
+}
 //////
 
 main_memory* mm;
@@ -41,6 +49,8 @@ main_memory* main_memory_init()
     frame_table_index=0;
     mm->total_access_count=0;
     mm->access_hit_count=0;
+    total_page_count = 0;
+    frame_table_index = 0;
     return mm;
 }
 
@@ -73,7 +83,7 @@ data_byte* get_l1_block(unsigned int block_number/* physical address/32 */) //ca
     return data;
 }
 
-data_byte* get_l2_block(unsigned int block_number/* physical address/64 */, pcb* temp_pcb) //called from l2 cache//
+data_byte* get_l2_block(unsigned int block_number/* physical address/64 */,Proc_Access_Info* temp_pai) //called from l2 cache//
 {
     unsigned int frame_number = block_number/8;
     unsigned int index = block_number%8;
@@ -171,25 +181,27 @@ main_memory_block* get_disk_block(unsigned int block_number /*physical address/5
     scn->block_number = block_number;
     scn->prev = second_chance_fifo->head;
     scn->next = second_chance_fifo->head->next;
-    second_chance_fifo->head->next = scn;
+    second_chance_fifo->head->next = scn; printf("pointer allocated \n");
     scn->next->prev = scn; 
     scn->second_chance_bit=1;
     mm->f_table.entry_table[block_number] = (frame_table_entry*)malloc(sizeof(frame_table_entry));
-    mm->f_table.entry_table[block_number]->valid_bit=VALID;
-    mm->f_table.entry_table[block_number]->frame_number=block_number;
-    mm->f_table.entry_table[block_number]->pid=pid;
+    mm->f_table.entry_table[block_number]->valid_bit = VALID;
+    mm->f_table.entry_table[block_number]->frame_number = block_number;
+    mm->f_table.entry_table[block_number]->pid = pid; printf("frame table entry allocated \n");
 
     total_page_count++;
     temp_pcb->page_count++;
-    // printf("counts incremented\n");
+    printf("counts incremented\n");
     if(total_page_count>PAGE_TABLE_LIMIT)
     {
+        printf("hopefully not\n");
         second_chance_node* replaced = second_chance_fifo->tail->prev;
         replace_mm_block(replaced);
         total_page_count--;
     }
     else if(temp_pcb->page_count >= PER_PROCESS_PAGE_LIMIT)
     {
+        printf("also hopefully not\n");
         second_chance_node* replaced = second_chance_fifo->tail->prev;
         while(1)
         {

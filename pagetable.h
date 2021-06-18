@@ -41,4 +41,8 @@ typedef struct
     page_table_lru_node* tail;
 } page_table_lru_queue;
 
+extern page_table_lru_queue page_table_lru_init();
+
+extern page_table_lru_node* page_table_init(/*should take block number as arg*/);
+
 #endif

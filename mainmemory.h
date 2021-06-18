@@ -4,9 +4,17 @@
 #define VALID 1
 #define INVALID 0
 
+// #include "processes.h"
+// #include "cache.h"
 #include "pagetable.h"
 
 extern int frame_table_index;
+typedef struct Proc_Access_Info
+{
+    unsigned int pid:16;
+    unsigned int num_main_memory_hits;
+    unsigned int num_main_memory_misses;
+} Proc_Access_Info;
 
 typedef struct frame_table_entry
 {
@@ -58,5 +66,15 @@ typedef struct second_chance_fifo_queue
     second_chance_node* head;
     second_chance_node* tail;
 } second_chance_fifo_queue;
+
 extern second_chance_fifo_queue* second_chance_fifo;
+extern data_byte* get_l2_block(unsigned int block_number/* physical address/64 */, Proc_Access_Info* temp_pai); //called from l2 cache//;
+extern void main_memory_free(main_memory* mm);
+
+extern main_memory* main_memory_init();
+
+extern main_memory_block* get_disk_block(unsigned int block_number, unsigned int pid);
+
+extern second_chance_fifo_queue* second_chance_replacement_init();
+
 #endif
