@@ -4,19 +4,19 @@
 
 #include "pagetable.h"
 #include "mainmemory.h"
-//#include "processes.h"
+#include "processes.h"
 
 #define PAGE_TABLE_LIMIT 1019
 #define PER_PROCESS_PAGE_LIMIT 256
 
 ///////TEMPORARY DECARATIONS TILL CODE IS INTEGRATED//
-typedef struct pcb
-{
-    unsigned int pid:16;
-    page_table* page_fir_base_addr;
-    unsigned int page_count;
-} pcb;
-pcb* temp_pcb;
+// typedef struct pcb
+// {
+//     unsigned int pid:16;
+//     page_table* page_fir_base_addr;
+//     unsigned int page_count;
+// } pcb;
+PCB* temp_pcb;
 
 // typedef struct Proc_Access_Info
 // {
@@ -28,7 +28,7 @@ Proc_Access_Info* temp_pai;
 
 void pcb_init()
 {
-    temp_pcb = (pcb*)malloc(sizeof(pcb));
+    temp_pcb = (PCB*)malloc(sizeof(PCB));
     printf("pcb init\n");
     return;
 }
@@ -40,7 +40,7 @@ second_chance_fifo_queue* second_chance_fifo;
 int total_page_count;
 int frame_table_index;
 
-extern page_table_entry* get_page_entry(unsigned int block_number, pcb* temp_pcb, Proc_Access_Info* temp_pai);
+extern page_table_entry* get_page_entry(unsigned int block_number, PCB* temp_pcb, Proc_Access_Info* temp_pai);
 
 main_memory* main_memory_init()
 {
