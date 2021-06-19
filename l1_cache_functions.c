@@ -6,6 +6,8 @@
 // #include "l1_cache.h"
 #include "cache.h"
 
+double av_num_ways_halted = 0.0;
+
 /* Creates an empty L1 cache structure with the given specifications and initializes all the entries. */
 
 L1_cache* initialize_L1_cache (int cache_type) {
@@ -27,15 +29,16 @@ L1_cache* initialize_L1_cache (int cache_type) {
             // Depending on the cache type given, initialize write bit values
             if (cache_type == INSTRUCTION)
                 l1_cache->l1_cache_sets[i].l1_cache_entry[j].write_bit = READ_ONLY;    // L1 INSTUCTION cache is READ ONLY 
-            else {
-                l1_cache->l1_cache_sets[i].l1_cache_entry[j].write_bit = READ_WRITE;   // L1 DATA cache can be READ as well as WRITE
-                // TODO: mark a section as READ_ONLY -- for Write exception to occur   // Some part of L1 DATA cache may be READ ONLY (write protection)
-                // data cache writes are about 28% P&H
-            }
-            
+            else 
+                l1_cache->l1_cache_sets[i].l1_cache_entry[j].write_bit = READ_WRITE;   // L1 DATA cache can be READ as well as WRITE   
+                        
             l1_cache->l1_cache_sets[i].lru_counter[j] = 0;
         }    
     }
+    
+    // Marking last set entry in each way as READ_ONLY (Write protected) -- for Write exception to occur
+    for (j = 0; j < NUM_L1_CACHE_WAYS; j++)
+        l1_cache->l1_cache_sets[NUM_L1_CACHE_SETS - 1].l1_cache_entry[j].write_bit = READ_ONLY;
         
     // Initialize all entries of L1 Cache Halt Tag Array (corresponding to each way) to 0
     for (i = 0; i < NUM_L1_CACHE_WAYS; i++) {
@@ -71,6 +74,7 @@ unsigned int search_L1_cache (L1_cache* l1_cache, unsigned int physical_address,
     L1_cache_way_halting_function (l1_cache, halt_tag);
 
     unsigned int data;
+    int num_halted_ways = NUM_L1_CACHE_WAYS;
 
     int i = 0;
 
@@ -78,49 +82,55 @@ unsigned int search_L1_cache (L1_cache* l1_cache, unsigned int physical_address,
     for (i = 0; i < NUM_L1_CACHE_WAYS; i++) {
 
         // Check halt tag entries corresponding to ACTIVE ways and the decoded set index - if entry matches proceed to compare main tags 
-        if (l1_cache->way_status[i] == ACTIVE && l1_cache->halt_tag_array[i].halt_tags_per_way[set_index] == halt_tag) {
+        if (l1_cache->way_status[i] == ACTIVE) {
+            num_halted_ways--; 
         
-            // If the entry is VALID and the tag value matches the main tag bits -- entry found!        
-            if (l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].valid_bit == VALID && l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].main_tag_bits == main_tag) {
+            if (l1_cache->halt_tag_array[i].halt_tags_per_way[set_index] == halt_tag) {
+        
+                // If the entry is VALID and the tag value matches the main tag bits -- entry found!        
+                if (l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].valid_bit == VALID && l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].main_tag_bits == main_tag) {
                     
-                // For READ access
-                if (access_type == READ_ACCESS) {
+                    // For READ access
+                    if (access_type == READ_ACCESS) {
  
-                    // Read 1 byte of data from L1 cache datablock (location in datablock given by offset)
-                    data = l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].data_blocks[offset].data;     
+                        // Read 1 byte of data from L1 cache datablock (location in datablock given by offset)
+                        data = l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].data_blocks[offset].data;     
  
-                    // Update LRU counter corresponding to this set index
-                    // update_LRU_counter(l1_cache, set_index, i);
-                    update_L1_LRU_counter(l1_cache, set_index, i);    
-                    
-                    return data;
-                }
+                        // Update LRU counter corresponding to this set index
+                        update_L1_LRU_counter(l1_cache, set_index, i);    
+                        return data;
+                    }
                                 
-                // For WRITE access - when WRITE permission is available
-                else if (access_type == WRITE_ACCESS && l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].write_bit == READ_WRITE) {
+                    // For WRITE access - when WRITE permission is available
+                    else if (access_type == WRITE_ACCESS && l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].write_bit == READ_WRITE) {
                     
-                    // Write 1 byte of data into L1 cache datablock (location in datablock given by offset)
-                    l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].data_blocks[offset].data = write_data;
+                        // Write 1 byte of data into L1 cache datablock (location in datablock given by offset)
+                        l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].data_blocks[offset].data = write_data;
                     
-                    // Set the dirty bit to indicate that the data is modified in L1 cache (write-back policy)
-                    l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].dirty_bit = DIRTY;
+                        // Set the dirty bit to indicate that the data is modified in L1 cache (write-back policy)
+                        l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].dirty_bit = DIRTY;
                     
-                    // Update LRU counter corresponding to this set index
-                    update_LRU_counter(l1_cache, set_index, i);
-                        
-                    return L1_CACHE_WRITE_SUCCESSFUL; 
-                }
+                        // Update LRU counter corresponding to this set index
+                        update_L1_LRU_counter(l1_cache, set_index, i);
+                        return L1_CACHE_WRITE_SUCCESSFUL; 
+                    }
                 
-                // For WRITE access - when WRITE permission is denied --- WRITE PROTECTION EXCEPTION
-                else if (access_type == WRITE_ACCESS && l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].write_bit == READ_ONLY) {
-                    return L1_CACHE_WRITE_PROTECTION_EXCEPTION; // CONTEXT SWITCH triggered TODO
+                    // For WRITE access - when WRITE permission is denied --- WRITE PROTECTION EXCEPTION
+                    else if (access_type == WRITE_ACCESS && l1_cache->l1_cache_sets[set_index].l1_cache_entry[i].write_bit == READ_ONLY) {
+                        return L1_CACHE_WRITE_PROTECTION_EXCEPTION; // Possible CONTEXT SWITCH TODO
+                    }
                 }
             }
         }
     }
     
-    // For L1 cache miss
-    return L1_CACHE_MISS;    // Search L2 and main memory (L1 - look-through and L2 - look-aside), update L1
+    av_num_ways_halted = av_num_ways_halted + ((double)num_halted_ways/4.0);
+    
+    // MISS!
+    if (num_halted_ways == NUM_L1_CACHE_WAYS)
+        return L1_CACHE_MISS_PREDETERMINED;
+    else
+        return L1_CACHE_MISS;    // Search L2 and main memory (L1 - look-through and L2 - look-aside), update L1
 }
 
 /* Performs the way-halting function for L1 cache by searching all the halt tag arrays for the halt tag corresponding to the given physical address (in PARALLEL with set index decoding). If no match is found, the corresponding way is a predetermined MISS. So, it HALTs the corresponding way to prevent unnecessary access, thereby saving energy. */
@@ -187,6 +197,9 @@ void update_L1_cache (L1_cache* l1_cache, L2_cache* l2_cache, unsigned int *data
 
     int LRU_way = 0;              // way index corresponding to least recently used entry in the set
 
+    unsigned int write_back_address = 0;    
+    // data_bytes l2_l1_data_blocks[NUM_L1_CACHE_BLOCK_SIZE]; // L1 data blocks fetched from L2
+
     int i = 0;
     int j = 0;
 
@@ -215,6 +228,8 @@ void update_L1_cache (L1_cache* l1_cache, L2_cache* l2_cache, unsigned int *data
     
     // REPLACEMENT: If all entries corresponding to the given set index are VALID, check the LRU counter and replace entry corresponding to LRU way
     
+    data_byte write_back_data [NUM_L1_CACHE_BLOCK_SIZE];
+
     if (i == NUM_L1_CACHE_WAYS) {
     
         // Check LRU counter to get the LRU way entry index
@@ -225,12 +240,15 @@ void update_L1_cache (L1_cache* l1_cache, L2_cache* l2_cache, unsigned int *data
             // TODO: WRITE-BACK TO L2 -- include L2 cache functions in the same file
             
             // Get the physical address of the dirty block to be written back to L2  
-            write_back_address = (l1_cache->l1_cache_sets[set_index].l1_cache_entry[LRU_way].main_tag << (NUM_L1_CACHE_HALT_TAG_BITS + NUM_L1_CACHE_SET_INDEX_BITS + NUM_L1_CACHE_OFFSET_BITS)) |
+            write_back_address = (l1_cache->l1_cache_sets[set_index].l1_cache_entry[LRU_way].main_tag_bits << (NUM_L1_CACHE_HALT_TAG_BITS + NUM_L1_CACHE_SET_INDEX_BITS + NUM_L1_CACHE_OFFSET_BITS)) |
                                  (l1_cache->halt_tag_array[LRU_way].halt_tags_per_way[set_index] << (NUM_L1_CACHE_SET_INDEX_BITS + NUM_L1_CACHE_OFFSET_BITS)) | 
                                  (set_index << NUM_L1_CACHE_OFFSET_BITS); 
             
+            for (int ii =0; ii < NUM_L1_CACHE_BLOCK_SIZE; ii++)
+                write_back_data[ii].data = l1_cache->l1_cache_sets[set_index].l1_cache_entry[LRU_way].data_blocks[ii].data;
+            
             // Write the dirty block in L1 back to L2 cache
-            search_L2_cache (l2_cache, write_back_address, data, WRITE_ACCESS);
+            search_L2_cache (l2_cache, write_back_address, write_back_data, WRITE_ACCESS);
         }
         
         // L1 cache data block updation

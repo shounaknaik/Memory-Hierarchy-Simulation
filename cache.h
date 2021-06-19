@@ -117,7 +117,7 @@ typedef struct L2_cache
 L1_cache* initialize_L1_cache (int cache_type);
 unsigned int search_L1_cache (L1_cache* l1_cache, unsigned int physical_address, unsigned int write_data, int access_type);
 void L1_cache_way_halting_function (L1_cache* l1_cache, unsigned int halt_tag);
-void update_L1_cache (L1_cache* l1_cache, L2_cache* l2_cache, unsigned int *data, unsigned int physical_address);
+void update_L1_cache (L1_cache* l1_cache, L2_cache* l2_cache, unsigned int *fetched_data, unsigned int physical_address);
 void update_L1_LRU_counter (L1_cache *l1_cache, int set_index, int way_index);
 int get_L1_LRU_entry_index (L1_cache* l1_cache, int set_index);
 void print_L1_cache (L1_cache *l1_cache);
