@@ -12,14 +12,14 @@
 #define UNSHARED 0
 
 ///////TEMPORARY DECARATIONS TILL CODE IS INTEGRATED//
-typedef struct pcb
-{
-    unsigned int pid;
-    page_table* page_dir_base_addr;
-    unsigned int page_count;
-    unsigned int num_main_memory_hits;
-    unsigned int num_main_memory_misses;
-} PCB;
+// typedef struct pcb
+// {
+//     unsigned int pid;
+//     page_table* page_dir_base_addr;
+//     unsigned int page_count;
+//     unsigned int num_main_memory_hits;
+//     unsigned int num_main_memory_misses;
+// } PCB;
 
 // typedef struct Proc_Access_Info
 // {

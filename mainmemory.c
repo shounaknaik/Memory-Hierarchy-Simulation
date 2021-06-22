@@ -37,22 +37,11 @@ void pcb_init()
 main_memory* mm;
 frame_table* f_table;
 second_chance_fifo_queue* second_chance_fifo;
-int total_page_count;
-int frame_table_index;
+extern page_table_lru_queue page_table_lru;
+extern int total_page_count;
+extern int frame_table_index;
 
 extern page_table_entry* get_page_entry(unsigned int block_number, PCB* temp_pcb, Proc_Access_Info* temp_pai);
-
-main_memory* main_memory_init()
-{
-    main_memory* mm;
-    mm = (main_memory*)malloc(sizeof(main_memory));
-    frame_table_index=0;
-    mm->total_access_count=0;
-    mm->access_hit_count=0;
-    total_page_count = 0;
-    frame_table_index = 0;
-    return mm;
-}
 
 second_chance_fifo_queue* second_chance_replacement_init()
 {
@@ -65,6 +54,22 @@ second_chance_fifo_queue* second_chance_replacement_init()
     second_chance_fifo->tail->next = NULL;
     second_chance_fifo->tail->prev = second_chance_fifo->head;
     return second_chance_fifo;
+}
+
+main_memory* main_memory_init()
+{
+    main_memory* mm;
+    mm = (main_memory*)malloc(sizeof(main_memory));
+    //initialize linked lists for pages and mm blocks//
+    second_chance_fifo = second_chance_replacement_init();
+    page_table_lru = page_table_lru_init();
+
+    frame_table_index=0;
+    mm->total_access_count=0;
+    mm->access_hit_count=0;
+    total_page_count = 0;
+    frame_table_index = 0;
+    return mm;
 }
 
 data_byte* get_l1_block(unsigned int block_number/* physical address/32 */) //called from l1 cache//
